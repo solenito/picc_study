@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The objective of this study the phenomenon of plasticity induced crack closure. In order to do this, the first step is to model an edge crack under cyclic loading, under plain stress assumption. We will compare the results of crack opening with a theoretical article from Vilder and al. In this work, we are trying to replicate the model done by Tomáš Oplt et al.
+The objective of this work is to study the phenomenon of plasticity induced crack closure. In order to do this, the first step is to model an edge crack under cyclic loading, under plain stress assumption. We will compare the results of crack opening with a theoretical article from Vilder and al. In this work, we are trying to replicate the model done by Tomáš Oplt et al.
 
 In the file `picc-plane-stress.py` you will find a script written from A to Z and ready to run on Abaqus. It will create the model and the job, ready to submit. The model created is explained here after.
 
