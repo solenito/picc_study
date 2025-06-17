@@ -4,7 +4,7 @@
 
 The objective of this study the phenomenon of plasticity induced crack closure. In order to do this, the first step is to model an edge crack under cyclic loading, under plain stress assumption. We will compare the results of crack opening with a theoretical article from Vilder and al. In this work, we are trying to replicate the model done by Tomáš Oplt et al.
 
-In the file "picc-plane-stress" you will find a script written from A to Z and ready to run on Abaqus. It will create the model and the job, ready to submit. The model created is explained here after.
+In the file `picc-plane-stress.py` you will find a script written from A to Z and ready to run on Abaqus. It will create the model and the job, ready to submit. The model created is explained here after.
 
 ## Numerical model
 
@@ -12,16 +12,17 @@ The specimen we study is an edge-cracked plate. Due to the geometric and loading
 
 Near the initial crack tip, we are doing a partition to refine the mesh here. That is why two rectangles are created : the small one around the crack tip and the larger one is a transition rectangle. The dimensions of the small rectangle are very important and depend on the plasticity zone size.
 
-The material is an elastic – perfectly plastic material with the following properties : \
-E = 210 000 MPa \
-$\sigma_y$ = 250 MPa
+The material is an elastic – perfectly plastic material with the following properties : 
+
+- E = 210 000 MPa 
+- $\sigma_y$ = 250 MPa
 
 However, due to convergence issues, a slight hardening is introduced in the numerical implementation, allowing the material behavior to approximate perfect plasticity while maintaining numerical stability.
 
 
 ## Cyclic loading
 
-The cyclic loading applied in this model ranges from 0 MPa to 25 MPa, corresponding to a stress ratio of $\frac{\sigma_{max}}{\sigma_y} = 0.1$ which is used in the literature. A cycle is defined by many substeps. Indeed, it allows a smoother calculation and avoir convergence issues. In my case, and following some advices in the literature, the substeps I use are : \
+The cyclic loading applied in this model ranges from 0 MPa to 25 MPa, corresponding to a stress ratio of $\frac{\sigma_{max}}{\sigma_y} = 0.1$ which is used in the literature. A cycle is defined by many substeps. Indeed, it allows a smoother calculation and avoir convergence issues. In my case, and following some advices in the literature, the substeps I use are : 
 
 - First phase - the loading : 10 steps 
 - Second phase - the debond : 1 step
