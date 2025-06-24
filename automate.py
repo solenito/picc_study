@@ -3,7 +3,7 @@ import time
 
 # Liste des valeurs de ton paramètre (ex: charge)
 
-charge_levels0 = [0.0, 0.11, 0.22, 0.33, 0.44, 0.56, 0.67, 0.78, 0.89, 1.0] #r ratio = 0.0
+charge_levels0 = [0.01, 0.11, 0.22, 0.33, 0.44, 0.56, 0.67, 0.78, 0.89, 1.0] #r ratio = 0.0
     
 charge_levels1 = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] #r ratio = 0.1    
     
@@ -49,8 +49,8 @@ charge = [charge_levels0, charge_levels1, charge_levels2, charge_levels3, charge
 decharge = [decharge_levels0, decharge_levels1, decharge_levels2, decharge_levels3, decharge_levels4, decharge_levels5]
 
 for i, load in enumerate(charge):
-    job_name = f"Job_R{i*0.1:.1f}"  
-    script_name = f"model_script_R{i*0.1:.1f}.py"
+    job_name = f"Job_R{i}".replace(".", "_")
+    script_name = f"model_script_R{i}"
 
     # Crée un nouveau script avec le bon paramètre
     with open("picc-v2.py", "r", encoding="utf-8") as template:
@@ -60,15 +60,18 @@ for i, load in enumerate(charge):
     content = content.replace("{{DECHARGE}}", str(decharge[i]))
     content = content.replace("{{JOBNAME}}", job_name)
 
-    with open(script_name, "w") as f:
+    with open(script_name, "w", encoding="utf-8") as f:
         f.write(content)
-    
-        print(f" Lancement de {job_name}...")
+    print(f"✅ Script généré : {script_name}")
 
     # Lancer le job Abaqus
-    os.system(f"abaqus cae noGUI={script_name}")
+    exit_code = os.system(f"abaqus cae noGUI={script_name}")
+    if exit_code != 0:
+        print(f"❌ Erreur lors de l'exécution du job {job_name}.")
+        continue
 
-    # Attendre que le fichier .lck disparaisse (le job est fini)
+    # Attendre que le fichier .lck disparaisse
+    time.sleep(5)  # Attendre un peu avant de vérifier
     while os.path.exists(f"{job_name}.lck"):
         print(f"Attente de fin pour {job_name}...")
         time.sleep(30)
