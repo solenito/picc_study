@@ -53,7 +53,7 @@ for i, load in enumerate(charge):
     script_name = f"model_script_R{i*0.1:.1f}.py"
 
     # Crée un nouveau script avec le bon paramètre
-    with open("picc-v2.py", "r") as template:
+    with open("picc-v2.py", "r", encoding="utf-8") as template:
         content = template.read()
 
     content = content.replace("{{CHARGE}}", str(charge[i]))
