@@ -1,56 +1,5 @@
 # Plasticity induced crack closure under plane stress assumption
 
-## Exemples de markdown
-
-Pour lire le code de ses exemples clique sur `edit` en haut à droite, ou clique sur `README.md` dans le dépot puis sur "code".
-
-Voici de *l'italique*, et ceci du **gras**. Tu peux même faire du ~~barré~~. 
-
-Si tu cites des noms de `fichier` ou des `fonctions`, fais le comme ceci. 
-
-Pour les liens c'est super simple [lien vers un guide](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax)
-
-Les images aussi : 
-
-![trop mimi le koala](https://sunshinecoastcouncil.netlify.app/.netlify/images?w=1080&h=720&fm=webp&q=80&url=https:%2F%2Fassets-au-scc.kc-usercontent.com:443%2F330b87ea-148b-3ecf-9857-698f2086fe8d%2Ff0be3918-305d-494c-a77e-570815af66ce%2FKoala%2520sleeping%2520in%2520tree.jpeg)
-
-Tu peux faire des listes très simples :
-
-- un item
-- un autre item
-    - etça s'embrique tout seul
-    - à l'infini !
-      - et oui
-     
-1. les listes numérotées se numérotent autamiquement
-2. pas besoin de t'embêter
-   
----
-
-- [ ] pas cochée
-- [x] cochée
-- [ ] pas cochée encore
-
-Les alertes :
-
-> Ceci est une simple citation !
-
-> [!WARNING]
-> ca ce sont les nouvelles alertes que j'ai découvert j'adore
-
-> [!NOTE]
-> Super simple
-
-> [!TIP]
-> et encore
-
-> [!IMPORTANT]
-> toujours plus
-
-> [!CAUTION]
-> Le dernier
-  
-
 ## Introduction
 
 The objective of this work is to study the phenomenon of plasticity induced crack closure. In order to do this, the first step is to model an edge crack under cyclic loading, under plain stress assumption. We will compare the results of crack opening with a theoretical article from Vilder and al. In this work, we are trying to replicate the model done by Tomáš Oplt et al.
