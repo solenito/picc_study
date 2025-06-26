@@ -72,9 +72,9 @@ As we are modelling only the upper part of the specimen and so only the upper fa
 
 # How to use the different files
 
-To run a numerical model of edge-crack specimen under cyclic loading, you have to run the script `picc-v2` in Abaqus. It will create the model and the job ready to submit. Some parameters can be changed in the script : for example the values of the load, the R-ratio, the stress ratio, the number of cycles or of substeps. 
+To run a numerical model of edge-crack specimen under cyclic loading, you have to run the script `picc-ready` in Abaqus. It will create the model and the job ready to submit. Some parameters can be changed in the script : for example the values of the load, the R-ratio, the stress ratio, the number of cycles or of substeps. 
 
-Several calculations can be started with the file `automate`. You have to define your parameters in it, for now it is the values of the load depending on the r-ratio. Then, use a prompt command to run it : on Windows, use the command `abaqus automate.py` to begin the calculations.
+Several calculations can be started with the file `automate`. You have to define your parameters in it, for now it is the values of the load depending on the r-ratio. Then, use a prompt command to run it : on Windows, use the command `abaqus automate.py` to begin the calculations. It will run the file `picc-v2` with all your parameters.
 
 After the calculation you can save the information you are interested in directly in Abaqus. If you have force-displacement data, you can use the file `post-process`. It will plot a lot of figures and give many information. It will repere the different cycles, calculate the stiffness by deriving the force-displacement curve and use linear regression in order to find the crack opening and crack closure load ratios.
 
