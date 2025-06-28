@@ -1,6 +1,6 @@
 # Plasticity induced crack closure under plane stress assumption
 
-by Solène Grappein
+Author :  Solène Grappein
 
 # Table of Contents
 
