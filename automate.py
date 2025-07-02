@@ -1,7 +1,7 @@
 import os
 import time
 
-# Liste des valeurs de ton paramètre (ex: charge)
+# List of parameters for each job
 
 charge_levels0 = [0.01, 0.11, 0.22, 0.33, 0.44, 0.56, 0.67, 0.78, 0.89, 1.0] #r ratio = 0.0
     
@@ -33,7 +33,7 @@ decharge_levels2 = [1.0, 0.97, 0.94, 0.91, 0.88, 0.85, 0.82, 0.79, 0.76, 0.73,
 
 decharge_levels3 = [1.0, 0.97, 0.95, 0.93, 0.9, 0.88, 0.86, 0.83, 0.81, 0.79,
                        0.76, 0.74, 0.72, 0.69, 0.67, 0.65, 0.62, 0.6, 0.58, 0.55,
-                       0.53, 0.51, 0.48, 0.46, 0.44, 0.41, 0.39, 0.37, 0.34, 0.32] #r ratio = 0.3''' 
+                       0.53, 0.51, 0.48, 0.46, 0.44, 0.41, 0.39, 0.37, 0.34, 0.32] #r ratio = 0.3
     
      
 decharge_levels4 = [1.0, 0.98, 0.96, 0.94, 0.92, 0.9, 0.88, 0.86, 0.84, 0.82,
@@ -50,9 +50,9 @@ decharge = [decharge_levels0, decharge_levels1, decharge_levels2, decharge_level
 
 for i, load in enumerate(charge):
     job_name = f"Job_R{i}".replace(".", "_")
-    script_name = f"model_script_R{i}"
+    script_name = f"model_script_R{i}.py"
 
-    # Crée un nouveau script avec le bon paramètre
+    # Creation of the script file
     with open("picc-v2.py", "r", encoding="utf-8") as template:
         content = template.read()
 
@@ -62,20 +62,25 @@ for i, load in enumerate(charge):
 
     with open(script_name, "w", encoding="utf-8") as f:
         f.write(content)
-    print(f"✅ Script généré : {script_name}")
+    print(f" Script generated : {script_name}")
 
-    # Lancer le job Abaqus
+    # Execution of the script
     exit_code = os.system(f"abaqus cae noGUI={script_name}")
     if exit_code != 0:
-        print(f"❌ Erreur lors de l'exécution du job {job_name}.")
+        print(f" Error while creating inp {job_name}.")
         continue
 
-    # Attendre que le fichier .lck disparaisse
-    time.sleep(5)  # Attendre un peu avant de vérifier
+    exit_code_job = os.system(f"abaqus job={job_name}")
+    if exit_code_job != 0:
+        print(f" Error while executing {job_name}.")
+        continue
+    
+    # Wait for the .lck file to be removed
+    time.sleep(60)  
     while os.path.exists(f"{job_name}.lck"):
-        print(f"Attente de fin pour {job_name}...")
+        print(f"Wait for the end of {job_name}...")
         time.sleep(30)
 
-    print(f"✅ {job_name} terminé.")
+    print(f" {job_name} finished")
 
-print(" Tous les jobs sont terminés.")
+print(" All jobs have finished")

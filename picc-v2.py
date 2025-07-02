@@ -299,9 +299,9 @@ else:
 
 # PROGRESSIVE RELEASE WITH MULTIPLE SUB-STEPS
 area_force = width*1.0  # Area of the top surface (50mm x 1mm)
-ratio_sigma = 0.3
+ratio_sigma = 0.5
 max_stress = ratio_sigma * 250.0  # Maximum stress for the load
-num_cycles = 1
+num_cycles = 20
 max_load = max_stress * area_force  # Maximum load to apply
 xc = crack_length
 
