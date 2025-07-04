@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import os
-import scipy
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 import scipy.stats as stats
@@ -78,16 +77,6 @@ plt.ylabel('Displacement (mm)', fontsize=12, fontweight='bold')
 plt.title('Force-Displacement Curve', fontsize=14, fontweight='bold')
 plt.grid(True, alpha=0.3)
 plt.legend()
-plt.show()
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
 def compliance_offset(Xl, Yl, Xul, Yul, Xl_min, X_max, Xul_min, params, opt):
     """
@@ -193,8 +182,8 @@ plt.figure(figsize=(10, 6))
 plt.plot(Coffset_l, sig_normalized_l, 'r-', linewidth=2, label='Loading Compliance')
 plt.plot(Coffset_ul, sig_normalized_ul, 'b-', linewidth=2, label='Unloading Compliance')
 plt.axvline(x=0, color='k', linestyle='--', linewidth=1, label='C_off = 0%')
-plt.xlabel('σ/σ_max', fontsize=12, fontweight='bold')           
-plt.ylabel('C_off (%)', fontsize=12, fontweight='bold')
+plt.ylabel('σ/σ_max', fontsize=12, fontweight='bold')           
+plt.xlabel('C_off (%)', fontsize=12, fontweight='bold')
 plt.title('Compliance Offset', fontsize=14, fontweight='bold')  
 plt.grid(True, alpha=0.3)
 plt.legend()
