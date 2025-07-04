@@ -149,6 +149,7 @@ compliance_locale = np.gradient(unloading_disps, unloading_forces)
 
 
 
+
 plt.figure(figsize=(8, 6))
 plt.plot(unloading_forces, compliance_locale, 'b-', linewidth=2, label='dU/dF (compliance instantanée)')
 plt.xlabel('Force (N)', fontsize=12, fontweight='bold')
