@@ -1,3 +1,4 @@
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -168,7 +169,7 @@ Xl_min = np.min(Xl)
 X_max = np.max(Xl)
 Xul_min = np.min(Xul)
 
-params = [0.2, 0.05, 0.01, 0.5, 0.5]  # span, shift, shift1, HL, F
+params = [0.1, 0.05, 0.01, 1, 0.25]  # span, shift, shift1, HL, F
 opt = 2  # 1 for loading only, 2 for loading and unloading  
 
 
