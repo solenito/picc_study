@@ -8,8 +8,7 @@ from sklearn.metrics import r2_score
 import scipy.stats as stats
 
 
-excel_file = "S_0-3/picc_s03_r05.xlsx"  # Name of your Excel file
-#excel_file = "load-unload-0-3_0_cycle20_rp_0-56_le_0-056_20substeps.xlsx"  # Name of your Excel file
+excel_file = "S_0-1/picc_s01_r00.xlsx"  # Name of your Excel file
 #excel_file = "force-displacement-0-2-perfectly-plastic.xlsx"  # Name of your Excel file
 sheet_name = "Sheet1"        # Sheet name (or 0 for first sheet)
 
@@ -71,15 +70,6 @@ if len(forces_ul_clean) < len(forces_ul):
     print(f"  {len(forces_ul) - len(forces_ul_clean)} NaN values removed")
     
     
-'''plt.figure(figsize=(10, 6))
-plt.plot(forces_l_clean, displacements_l_clean, 'r-', linewidth=2, label='Loading Phase')
-plt.plot(forces_ul_clean, displacements_ul_clean, 'b-', linewidth=2, label='Unloading Phase')
-plt.xlabel('Force (N)', fontsize=12, fontweight='bold')     
-plt.ylabel('Displacement (mm)', fontsize=12, fontweight='bold')
-plt.title('Force-Displacement Curve', fontsize=14, fontweight='bold')
-plt.grid(True, alpha=0.3)
-plt.legend()'''
-
 
 def compliance_offset(Xl, Yl, Xul, Yul, Xl_min, X_max, Xul_min, params, opt):
     """
@@ -180,55 +170,118 @@ Xseg_l, Coffset_l, Xseg_ul, Coffset_ul = compliance_offset(Xl, Yl, Xul, Yul, Xl_
 sig_normalized_l = Xseg_l / X_max
 sig_normalized_ul = Xseg_ul / X_max
 
-# ====== DÉFINIR DES POINTS SPÉCIFIQUES ======
-# Contraintes normalisées souhaitées (à modifier selon vos besoins)
-target_sigma_normalized_loading = 0.61    # Pour la courbe de chargement
-target_sigma_normalized_unloading = 0.0  # Pour la courbe de déchargement
 
-# Trouver les valeurs de compliance offset correspondantes
-def find_coffset_at_sigma(sigma_target, sig_norm, coffset):
-    """Trouve la valeur de C_off pour une contrainte normalisée donnée par interpolation"""
-    if len(sig_norm) > 0 and len(coffset) > 0:
-        # Interpolation linéaire
-        return np.interp(sigma_target, sig_norm, coffset)
-    return np.nan
+### COMPARISON - Version corrigée
 
-coffset_l_at_target = find_coffset_at_sigma(target_sigma_normalized_loading, sig_normalized_l, Coffset_l)
-coffset_ul_at_target = find_coffset_at_sigma(target_sigma_normalized_unloading, sig_normalized_ul, Coffset_ul)
+#files = ["S_0-1/picc_s01_r00.xlsx", "S_0-1/picc_s01_r01.xlsx", "S_0-1/picc_s01_r02.xlsx", "S_0-1/picc_s01_r03.xlsx", "S_0-1/picc_s01_r05.xlsx"]  # List of files to compare
+#files = ["S_0-3/picc_s03_r00.xlsx", "S_0-3/picc_s03_r02.xlsx", "S_0-3/picc_s03_r03.xlsx", "S_0-3/picc_s03_r05.xlsx"]  # List of files to compare
+files = ["S_0-2/picc_s02_r00.xlsx", "S_0-2/picc_s02_r01.xlsx", "S_0-2/picc_s02_r02.xlsx", "S_0-2/picc_s02_r03.xlsx", "S_0-2/picc_s02_r05.xlsx"]
+legend = ["R=0", "R=0.1", "R=0.2", "R=0.3", "R=0.5"]  # Legend for the plots
 
-# ====== PLOT LOADING AND UNLOADING COMPLIANCE ======
+# Dictionnaires pour stocker les résultats de chaque fichier
+results_loading = {}
+results_unloading = {}
 
-plt.figure(figsize=(10, 6))
-plt.plot(Coffset_l, sig_normalized_l, 'r-', linewidth=2, label='Loading Compliance')
-plt.plot(Coffset_ul, sig_normalized_ul, 'b-', linewidth=2, label='Unloading Compliance')
+for i, excel_file in enumerate(files):
+    print(f"\n=== Processing file {i+1}/{len(files)}: {excel_file} ===")
+    
+    sheet_name = "Sheet1"
+    force_load = "force_load"
+    displacement_load = "displacement_load"
+    force_unload = "force_unload"
+    displacement_unload = "displacement_unload"
 
-# Ajouter les points spécifiques
-if not np.isnan(coffset_l_at_target):
-    plt.plot(coffset_l_at_target, target_sigma_normalized_loading, 'ro', markersize=8, 
-             label=f'Opening point (σ/σ_max = {target_sigma_normalized_loading:.3f})')
-if not np.isnan(coffset_ul_at_target):
-    plt.plot(coffset_ul_at_target, target_sigma_normalized_unloading, 'bo', markersize=8, 
-             label=f'Closure Point (σ/σ_max = {target_sigma_normalized_unloading:.3f})')
+    # ====== EXCEL FILE READING ======
+    try:
+        if not os.path.exists(excel_file):
+            print("File not found:", excel_file)
+            continue
+        
+        df = pd.read_excel(excel_file, sheet_name=sheet_name)
+        print(f"File read successfully - Dimensions: {df.shape}")
+        
+    except Exception as e:
+        print(f"Excel reading error: {str(e)}")
+        continue
 
-plt.axvline(x=0, color='k', linestyle='--', linewidth=1, label='C_off = 0%')
+    # ====== DATA EXTRACTION ======
+    forces_l = df[force_load].values
+    displacements_l = df[displacement_load].values
+    forces_ul = df[force_unload].values
+    displacements_ul = df[displacement_unload].values
 
-# Lignes horizontales pour chaque contrainte cible
-plt.axhline(y=target_sigma_normalized_loading, color='red', linestyle=':', alpha=0.5, 
-            label=f'σ/σ_max loading = {target_sigma_normalized_loading:.3f}')
-plt.axhline(y=target_sigma_normalized_unloading, color='blue', linestyle=':', alpha=0.5, 
-            label=f'σ/σ_max unloading = {target_sigma_normalized_unloading:.3f}')
+    # MULTIPLY DISPLACEMENTS BY 2
+    displacements_l = displacements_l * 2.0
+    displacements_ul = displacements_ul * 2.0
 
-plt.xlabel('C_off (%)', fontsize=12, fontweight='bold')           
-plt.ylabel('σ/σ_max', fontsize=12, fontweight='bold')
-plt.title('Compliance Offset', fontsize=14, fontweight='bold')  
+    # ====== DATA CLEANING ======
+    mask = ~(np.isnan(forces_l) | np.isnan(displacements_l))
+    forces_l_clean = forces_l[mask]
+    displacements_l_clean = displacements_l[mask]
+
+    mask2 = ~(np.isnan(forces_ul) | np.isnan(displacements_ul))
+    forces_ul_clean = forces_ul[mask2]
+    displacements_ul_clean = displacements_ul[mask2]
+
+    # ====== COMPLIANCE CALCULATION ======
+    Xl = forces_l_clean
+    Yl = displacements_l_clean  
+    Xul = forces_ul_clean
+    Yul = displacements_ul_clean
+    Xl_min = np.min(Xl)
+    X_max = np.max(Xl)
+    Xul_min = np.min(Xul)
+
+    params = [0.1, 0.05, 0.01, 1, 0.25]  # span, shift, shift1, HL, F
+    opt = 2  # 1 for loading only, 2 for loading and unloading  
+
+    Xseg_l_temp, Coffset_l_temp, Xseg_ul_temp, Coffset_ul_temp = compliance_offset(
+        Xl, Yl, Xul, Yul, Xl_min, X_max, Xul_min, params, opt
+    )
+
+    sig_normalized_l_temp = Xseg_l_temp / X_max
+    sig_normalized_ul_temp = Xseg_ul_temp / X_max
+    
+    # Stocker les résultats avec un nom unique
+    file_key = excel_file.replace('.xlsx', '').replace('load-unload-', '')
+    results_loading[file_key] = {
+        'Coffset': Coffset_l_temp,
+        'sig_normalized': sig_normalized_l_temp
+    }
+    results_unloading[file_key] = {
+        'Coffset': Coffset_ul_temp,
+        'sig_normalized': sig_normalized_ul_temp
+    }
+
+# ====== PLOT ALL FILES ON SAME GRAPH ======
+plt.figure(figsize=(12, 8))
+
+# Couleurs pour différencier les fichiers
+colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown']
+
+# Plot loading curves
+for i, (file_key, data) in enumerate(results_loading.items()):
+    plt.plot(data['Coffset'], data['sig_normalized'], 
+             color=colors[i % len(colors)], linestyle='-', linewidth=2, 
+             label=f' {legend[i]}')
+
+# Plot unloading curves
+for i, (file_key, data) in enumerate(results_unloading.items()):
+    plt.plot(data['Coffset'], data['sig_normalized'], 
+             color=colors[i % len(colors)], linestyle='-', linewidth=2) 
+#             label=f'Unloading - {legend[i]}')
+
+plt.axvline(x=0, color='k', linestyle=':', linewidth=1, label='C_off = 0%')
+plt.xlabel('C_off (%)', fontsize=16, fontweight='bold')           
+plt.ylabel('σ/σ_max', fontsize=16, fontweight='bold')
+plt.title('Compliance Offset Comparison', fontsize=20, fontweight='bold')  
 plt.grid(True, alpha=0.3)
-plt.legend()
-
-# Afficher les valeurs des points spécifiques
-print(f"\nPoints spécifiques:")
-if not np.isnan(coffset_l_at_target):
-    print(f"  Loading (σ/σ_max = {target_sigma_normalized_loading:.3f}): C_off = {coffset_l_at_target:.2f}%")
-if not np.isnan(coffset_ul_at_target):
-    print(f"  Unloading (σ/σ_max = {target_sigma_normalized_unloading:.3f}): C_off = {coffset_ul_at_target:.2f}%")
-
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=20)
+plt.tight_layout()
 plt.show()
+
+# Afficher un résumé
+print(f"\n=== SUMMARY ===")
+print(f"Successfully processed {len(results_loading)} files:")
+for file_key in results_loading.keys():
+    print(f"  - {file_key}")
