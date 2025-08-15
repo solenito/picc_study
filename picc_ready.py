@@ -36,70 +36,40 @@ model.materials['RigidMaster'].Elastic(table=((2100000.0, 0.3),))
 model.TrussSection(name='MasterSection', material='RigidMaster', area=1.0)
 
 
-# PRECISE RECTANGULAR PARTITION
+# PRECISE RECTANGULAR PARTITION - ZONE FINE UNIQUEMENT
 
 # Partition parameters
-partition_x_start = 9.93    
+partition_x_start = 9.44    
 partition_y_start = 0.0     
-partition_width = 0.28     
-partition_height = 0.07     
+partition_width = 2.24     
+partition_height = 0.56     
 
 partition_x_end = partition_x_start + partition_width 
 partition_y_end = partition_y_start + partition_height
 
-
-# TRANSITION partition parameters (intermediate zone)
-transition_margin = 0.15   
-transition_x_start = partition_x_start - transition_margin
-transition_y_start = 0.0  
-transition_width = partition_width + 2 * transition_margin 
-transition_height = partition_height + transition_margin    
-
-transition_x_end = transition_x_start + transition_width
-transition_y_end = transition_y_start + transition_height
-
 # Create sketch for partitions
 s_partition = model.ConstrainedSketch(name='partitionSketch', sheetSize=200.0)
 
-# Draw fine partition rectangle
+# Draw fine partition rectangle UNIQUEMENT
 
-# Left vertical line transition
-s_partition.Line(point1=(transition_x_start, transition_y_start), 
-                 point2=(transition_x_start, transition_y_end))
-
-# Top horizontal line transition
-s_partition.Line(point1=(transition_x_start, transition_y_end), 
-                 point2=(transition_x_end, transition_y_end))
-
-# Right vertical line transition
-s_partition.Line(point1=(transition_x_end, transition_y_end), 
-                 point2=(transition_x_end, transition_y_start))
-
-
-# Draw fine partition rectangle
-
-# Left vertical line (x = 8mm)
+# Left vertical line (x = 9.44mm)
 s_partition.Line(point1=(partition_x_start, partition_y_start), 
                  point2=(partition_x_start, partition_y_end))
 
-# Top horizontal line (y = 2mm)
+# Top horizontal line (y = 0.56mm)
 s_partition.Line(point1=(partition_x_start, partition_y_end), 
                  point2=(partition_x_end, partition_y_end))
 
-# Right vertical line (x = 18mm)
+# Right vertical line (x = 11.68mm)
 s_partition.Line(point1=(partition_x_end, partition_y_end), 
                  point2=(partition_x_end, partition_y_start))
-
-
 
 # Apply partition
 face_to_partition = part.faces[0]
 part.PartitionFaceBySketch(faces=face_to_partition, sketch=s_partition)
 
-
 # Identify created zones
 zone_fine = None
-zone_transition = None
 zones_normales = []
 
 for i, face in enumerate(part.faces):
@@ -112,9 +82,6 @@ for i, face in enumerate(part.faces):
         if (partition_x_start <= x_center <= partition_x_end and 
             partition_y_start <= y_center <= partition_y_end):
             zone_fine = face
-        elif (transition_x_start <= x_center <= transition_x_end and 
-              transition_y_start <= y_center <= transition_y_end):
-            zone_transition = face
         else:
             zones_normales.append(face)
             
@@ -134,7 +101,7 @@ print("=== ADAPTIVE MESHING ===")
 # Global mesh first
 part.seedPart(size=0.6)  # Normal global mesh
 
-# 1. Identify horizontal and vertical edges of the rectangle
+# 1. Identify horizontal and vertical edges of the fine rectangle
 edges_horizontal = []
 edges_vertical = []
 
@@ -151,48 +118,13 @@ for edge in part.edges:
         if abs(x - partition_x_start) < 1e-3 or abs(x - partition_x_end) < 1e-3:
             edges_horizontal.append(edge)
 
-# 2. Apply mesh by number of elements
-part.seedEdgeByNumber(edges=edges_horizontal, number=10)
-part.seedEdgeByNumber(edges=edges_vertical, number=40)
+# 2. Apply fine mesh to partition edges
+part.seedEdgeByNumber(edges=edges_horizontal, number=10) 
+part.seedEdgeByNumber(edges=edges_vertical, number=40) 
 
-# 2. TRANSITION ZONE MESH (outer rectangle) - PROGRESSIVE MESH
-print("=== TRANSITION ZONE MESHING ===")
-transition_horizontal_edges = []
-transition_vertical_edges = []
-
-for edge in part.edges:
-    point1 = edge.pointOn[0]
-    x, y = point1[0], point1[1]
-    
-    # Edges of TRANSITION rectangle (but NOT fine rectangle)
-    in_transition = (transition_x_start - 0.001 <= x <= transition_x_end + 0.001 and
-                    transition_y_start - 0.001 <= y <= transition_y_end + 0.001)
-    in_fine = (partition_x_start - 0.001 <= x <= partition_x_end + 0.001 and
-              partition_y_start - 0.001 <= y <= partition_y_end + 0.001)
-    
-    if in_transition and not in_fine:
-        # Check if edge is on transition rectangle contour
-        if (abs(y - transition_y_start) < 1e-3 or abs(y - transition_y_end) < 1e-3):
-            transition_horizontal_edges.append(edge)
-        elif (abs(x - transition_x_start) < 1e-3 or abs(x - transition_x_end) < 1e-3):
-            transition_vertical_edges.append(edge)
-
-# Calculate progressive transition mesh
-transition_width_total = transition_width  
-transition_height_total = transition_height 
-
-# Transition mesh: finer than global, less fine than fine zone
-num_elements_transition_h = 17 
-num_elements_transition_v = 7  
-
-# Apply transition mesh
-if transition_horizontal_edges:
-    part.seedEdgeByNumber(edges=transition_horizontal_edges, number=num_elements_transition_h)
-    print("Transition horizontal edges: " + str(len(transition_horizontal_edges)) + " with " + str(num_elements_transition_h) + " elements")
-
-if transition_vertical_edges:
-    part.seedEdgeByNumber(edges=transition_vertical_edges, number=num_elements_transition_v)
-    print("Transition vertical edges: " + str(len(transition_vertical_edges)) + " with " + str(num_elements_transition_v) + " elements")
+print("Fine mesh applied:")
+print("  Horizontal edges: " + str(len(edges_horizontal)) + " with 10 elements")
+print("  Vertical edges: " + str(len(edges_vertical)) + " with 40 elements")
 
 # Mesh control and generation
 part.setMeshControls(regions=part.faces, elemShape=QUAD, technique=FREE)
@@ -214,7 +146,6 @@ part.SectionAssignment(region=(part.faces,), sectionName='Section')
 edgesSet = part_master.Set(name='AllEdges', edges=part_master.edges)
 part_master.SectionAssignment(region=edgesSet, sectionName='MasterSection')
 
-
 # ASSEMBLY 
 assembly      = model.rootAssembly
 instance_main = assembly.Instance(name='PlateInst',  part=part,        dependent=ON)
@@ -222,7 +153,6 @@ instance_master = assembly.Instance(name='MasterInst', part=part_master, depende
 print(" Instances créées - ligne master positionnée au bas du rectangle")
 
 assembly.regenerate()
-
 
 # CREATE CONTACT SURFACES with MASKS
 edges_plate = assembly.instances['PlateInst'].edges
@@ -322,13 +252,7 @@ for cycle in range(num_cycles):
                                   nodeLabels=((instance_main.name, [n.label for n in fixed_nodes]),))
     
     # ====== PHASE 1: MOUNT (10 steps) - VERY SMOOTH PROGRESSION ======
-    #charge_levels = [0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.0]  # 10%, 20%, ..., 100%
-    
-    #charge_levels = [0.3, 0.38, 0.47, 0.55, 0.63, 0.72, 0.8, 0.88, 0.97, 1.0] #r ratio = 0.3
-    
-    #charge_levels = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] #r ratio = 0.1
-    
-    charge_levels = [0.2, 0.29, 0.38, 0.47, 0.56, 0.64, 0.73, 0.82, 0.91, 1.0] #r ratio = 0.2
+    charge_levels = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
     for substep in range(10):  # ← Changé de 5 à 10
         step_name = 'Cycle-' + str(cycle+1) + '-Mount-' + str(substep+1)
@@ -337,7 +261,7 @@ for cycle in range(num_cycles):
         if cycle == 0 and substep == 0:
             prev_step = 'Initial'
         elif substep == 0:
-            prev_step = 'Cycle-' + str(cycle) + '-Descent-30'  # ← Changé de 19 à 30
+            prev_step = 'Cycle-' + str(cycle) + '-Descent-30'  # Référence au dernier step du cycle 20
         else:
             prev_step = 'Cycle-' + str(cycle+1) + '-Mount-' + str(substep)
         
@@ -346,8 +270,8 @@ for cycle in range(num_cycles):
                          description='Cycle ' + str(cycle+1) + ' - Mount ' + str(substep+1),
                          nlgeom=ON,
                          timePeriod=6.0,         
-                         initialInc=0.02,      
-                         maxInc=0.5,             
+                         initialInc=0.01,      
+                         maxInc=0.3,             
                          minInc=1e-10,          
                          maxNumInc=2000,         
                          adaptiveDampingRatio=0.15)
@@ -407,11 +331,13 @@ for cycle in range(num_cycles):
                      description='Cycle ' + str(cycle+1) + ' - Plateau',
                      nlgeom=ON,
                      timePeriod=3.0,         
-                     initialInc=0.1,      
-                     maxInc=0.5,            
-                     minInc=1e-10,            
-                     maxNumInc=2000,
-                     adaptiveDampingRatio=0.05)
+                     initialInc=0.01,      
+                     maxInc=0.1,            
+                     minInc=1e-12,            
+                     maxNumInc=5000,
+                     adaptiveDampingRatio=0.05,
+                     stabilizationMethod=DAMPING_FACTOR,
+                     stabilizationMagnitude=0.01)
 
     # Constant load at maximum
     force_per_node = max_load / len(top_nodes)
@@ -421,21 +347,10 @@ for cycle in range(num_cycles):
     print("  Plateau: " + str(max_load) + "N (100%)")
     
     # ====== PHASE 3: DESCENT (30 steps) ======
-    '''decharge_levels = [0.97, 0.93, 0.90, 0.87, 0.83, 0.80, 0.77, 0.73, 0.70, 0.67,  
-                       0.63, 0.60, 0.57, 0.53, 0.50, 0.47, 0.43, 0.40, 0.37, 0.33,  
-                       0.30, 0.27, 0.23, 0.20, 0.17, 0.13, 0.10, 0.07, 0.03, 0.00]'''
-    
-    '''decharge_levels = [1.0, 0.97, 0.95, 0.93, 0.9, 0.88, 0.86, 0.83, 0.81, 0.79,
-                       0.76, 0.74, 0.72, 0.69, 0.67, 0.65, 0.62, 0.6, 0.58, 0.55,
-                       0.53, 0.51, 0.48, 0.46, 0.44, 0.41, 0.39, 0.37, 0.34, 0.32] #r ratio = 0.3''' 
-    
-    '''decharge_levels = [1.0, 0.97, 0.93, 0.9, 0.86, 0.83, 0.79, 0.76, 0.72, 0.69,
-                        0.66, 0.62, 0.59, 0.55, 0.52, 0.48, 0.45, 0.41, 0.38, 0.34,
-                        0.31, 0.28, 0.24, 0.21, 0.19, 0.17, 0.15, 0.13, 0.11, 0.1] #r ratio = 0.1 '''
-    
     decharge_levels = [1.0, 0.97, 0.94, 0.91, 0.88, 0.85, 0.82, 0.79, 0.76, 0.73,
-                        0.71, 0.68, 0.65, 0.62, 0.59, 0.56, 0.53, 0.5, 0.47, 0.44,
-                        0.41, 0.38, 0.35, 0.32, 0.29, 0.26, 0.24, 0.22, 0.21, 0.2]   #r ratio = 0.2 
+                   0.70, 0.67, 0.64, 0.61, 0.58, 0.55, 0.52, 0.49, 0.46, 0.43,
+                   0.40, 0.37, 0.34, 0.31, 0.28, 0.25, 0.22, 0.19, 0.16, 0.10]
+
 
     for substep in range(30):
         step_name = 'Cycle-' + str(cycle+1) + '-Descent-' + str(substep+1)
@@ -445,18 +360,18 @@ for cycle in range(num_cycles):
         else:
             prev_step = 'Cycle-' + str(cycle+1) + '-Descent-' + str(substep)
         
-        if substep >= 20:  
+        if substep >= 15:  # Stabilisation pour les 5 derniers steps
             model.StaticStep(name=step_name, previous=prev_step,
                              description='Cycle ' + str(cycle+1) + ' - Descent ' + str(substep+1),
                              nlgeom=ON,
                              timePeriod=6.0,        
-                             initialInc=0.005,    
-                             maxInc=0.5,              
+                             initialInc=0.001,    
+                             maxInc=0.2,              
                              minInc=1e-10,
-                             maxNumInc=3000,
+                             maxNumInc=5000,
                              adaptiveDampingRatio=0.05,
                              stabilizationMethod=DAMPING_FACTOR,
-                            stabilizationMagnitude=0.005)  
+                            stabilizationMagnitude=0.01)  
         else:
             # parameters for the first steps
             model.StaticStep(name=step_name, previous=prev_step,
@@ -464,9 +379,9 @@ for cycle in range(num_cycles):
                              nlgeom=ON,
                              timePeriod=6.0,        
                              initialInc=0.02,   
-                             maxInc=0.5,              
+                             maxInc=0.2,              
                              minInc=1e-10,
-                             maxNumInc=2000,
+                             maxNumInc=5000,
                              adaptiveDampingRatio=0.05) 
         
         # Load reduction
@@ -479,7 +394,7 @@ for cycle in range(num_cycles):
         print("  Descent " + str(substep+1) + ": " + str(int(current_load)) + "N (" + str(int(decharge_levels[substep]*100)) + "%)")
     
     # RELEASE AT END OF CYCLE 
-    liberation_length = 0.007 
+    liberation_length = 0.056
     xc = xc + liberation_length  # Advance crack
     
     print(" END CYCLE " + str(cycle+1) + ": RELEASE!")
@@ -492,7 +407,147 @@ for cycle in range(num_cycles):
     print("    Nodes released THIS CYCLE: " + str(len(liberated_nodes)))
     print("    Nodes remaining fixed: " + str(len(remaining_fixed)))
 
+#LAST CYCLE WITHOUT RELEASE
+print("\n=== LAST CYCLE WITHOUT RELEASE ===")
 
+# Redéfinir les variables nécessaires
+area_force = width * 1.0
+ratio_sigma = 0.2
+max_stress = ratio_sigma * 250.0
+max_load = max_stress * area_force
+
+# Définir les nœuds fixes pour le dernier cycle
+fixed_nodes = [n for n in bottom_nodes if n.coordinates[0] > xc]
+print("Last Cycle: current position x = " + str(xc) + "mm")
+print("  - Nodes fixed DURING last cycle: " + str(len(fixed_nodes)))
+
+# Créer l'ensemble pour les nœuds fixes du dernier cycle
+if fixed_nodes:
+    set_name = 'Fixed-LastCycle'
+    assembly.SetFromNodeLabels(name=set_name, 
+                              nodeLabels=((instance_main.name, [n.label for n in fixed_nodes]),))
+
+# Redéfinir les niveaux de charge pour le dernier cycle
+charge_levels = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+decharge_levels = [1.0, 0.97, 0.94, 0.91, 0.88, 0.85, 0.82, 0.79, 0.76, 0.73,
+                   0.70, 0.67, 0.64, 0.61, 0.58, 0.55, 0.52, 0.49, 0.46, 0.43,
+                   0.40, 0.37, 0.34, 0.31, 0.28, 0.25, 0.22, 0.19, 0.16, 0.10]
+
+
+# ====== PHASE 1: MOUNT (10 steps) ======
+for substep in range(10):
+    step_name = 'LastCycle-Mount-' + str(substep+1)
+    
+    # Determine previous step
+    if substep == 0:
+        prev_step = 'Cycle-20-Descent-30'  # Référence au dernier step du cycle 20
+    else:
+        prev_step = 'LastCycle-Mount-' + str(substep)
+    
+    # PARAMETERS
+    model.StaticStep(name=step_name, previous=prev_step,
+                    description='Last Cycle - Mount ' + str(substep+1),
+                    nlgeom=ON,
+                    timePeriod=6.0,         
+                    initialInc=0.01,      
+                    maxInc=0.3,             
+                    minInc=1e-10,          
+                    maxNumInc=2000,         
+                    adaptiveDampingRatio=0.15)
+    
+    # Smoother progressive load
+    current_load = max_load * charge_levels[substep]
+    force_per_node = current_load / len(top_nodes)
+
+    # Update existing load (pas de création, juste update)
+    model.loads['CyclicLoad'].setValuesInStep(stepName=step_name,
+                                            cf2=force_per_node)
+    
+    # Handle BCs at first mount substep
+    if substep == 0:
+        # Désactiver la BC du cycle précédent
+        prev_bc_name = 'BC-Cycle-20'  # Nom explicite du dernier cycle
+        if prev_bc_name in model.boundaryConditions.keys():
+            model.boundaryConditions[prev_bc_name].deactivate(step_name)
+            print("    Previous cycle BC deactivated")
+        
+        # Create new BC FOR ENTIRE LAST CYCLE
+        if fixed_nodes:
+            bc_name = 'BC-LastCycle'
+            model.DisplacementBC(name=bc_name, createStepName=step_name,
+                               region=assembly.sets[set_name], u1=0.0, u2=0.0)
+            print("    New BC created: " + str(len(fixed_nodes)) + " fixed nodes")
+    
+    print("  Mount " + str(substep+1) + ": " + str(int(current_load)) + "N (" + str(int(charge_levels[substep]*100)) + "%)")
+
+# ====== PHASE 2: PLATEAU (1 step) ======
+step_name = 'LastCycle-Plateau-1'
+prev_step = 'LastCycle-Mount-10'
+
+model.StaticStep(name=step_name, previous=prev_step,
+                description='Last Cycle - Plateau',
+                nlgeom=ON,
+                timePeriod=3.0,         
+                initialInc=0.01,      
+                maxInc=0.1,            
+                minInc=1e-12,            
+                maxNumInc=5000,
+                adaptiveDampingRatio=0.05,
+                stabilizationMethod=DAMPING_FACTOR,
+                stabilizationMagnitude=0.01)
+
+# Constant load at maximum
+force_per_node = max_load / len(top_nodes)
+model.loads['CyclicLoad'].setValuesInStep(stepName=step_name,
+                                        cf2=force_per_node)
+
+print("  Plateau: " + str(max_load) + "N (100%)")
+
+# ====== PHASE 3: DESCENT (30 steps) ======
+
+
+for substep in range(30):
+    step_name = 'LastCycle-Descent-' + str(substep+1)
+    
+    if substep == 0:
+        prev_step = 'LastCycle-Plateau-1'  
+    else:
+        prev_step = 'LastCycle-Descent-' + str(substep)
+    
+    if substep >= 10:  
+        model.StaticStep(name=step_name, previous=prev_step,
+                        description='Last Cycle - Descent ' + str(substep+1),
+                        nlgeom=ON,
+                        timePeriod=6.0,        
+                        initialInc=0.001,    
+                        maxInc=0.2,              
+                        minInc=1e-10,
+                        maxNumInc=5000,
+                        adaptiveDampingRatio=0.05,
+                        stabilizationMethod=DAMPING_FACTOR,
+                        stabilizationMagnitude=0.01)  
+    else:
+        model.StaticStep(name=step_name, previous=prev_step,
+                        description='Last Cycle - Descent ' + str(substep+1),
+                        nlgeom=ON,
+                        timePeriod=6.0,        
+                        initialInc=0.02,   
+                        maxInc=0.2,              
+                        minInc=1e-10,
+                        maxNumInc=5000,
+                        adaptiveDampingRatio=0.05) 
+    
+    # Load reduction
+    current_load = max_load * decharge_levels[substep]
+    force_per_node = current_load / len(top_nodes)
+    
+    model.loads['CyclicLoad'].setValuesInStep(stepName=step_name,
+                                            cf2=force_per_node)
+    
+    print("  Descent " + str(substep+1) + ": " + str(int(current_load)) + "N (" + str(int(decharge_levels[substep]*100)) + "%)")
+
+# PAS DE RELEASE À LA FIN !
+print("Last cycle completed - NO NODE RELEASE")
 
 # History output 
 
@@ -533,42 +588,74 @@ model.HistoryOutputRequest(name='H-Output-Force',
                           sectionPoints=DEFAULT,
                           rebar=EXCLUDE)
 
-# Créer des ensembles pour les nœuds 50, 51, et 52
-assembly.SetFromNodeLabels(name='Node50', nodeLabels=((instance_main.name, [50]),))
-assembly.SetFromNodeLabels(name='Node51', nodeLabels=((instance_main.name, [51]),))
-assembly.SetFromNodeLabels(name='Node52', nodeLabels=((instance_main.name, [52]),))
+# Créer des ensembles pour les nœuds 45, 46, 47
+assembly.SetFromNodeLabels(name='Node47', nodeLabels=((instance_main.name, [47]),))
+assembly.SetFromNodeLabels(name='Node46', nodeLabels=((instance_main.name, [46]),))
+assembly.SetFromNodeLabels(name='Node45', nodeLabels=((instance_main.name, [45]),))
+assembly.SetFromNodeLabels(name='Node44', nodeLabels=((instance_main.name, [44]),))
 
 # Ajouter des requêtes de History Output pour U2 (déplacement vertical) de chaque nœud
-regionDef_node50 = model.rootAssembly.sets['Node50']
-model.HistoryOutputRequest(name='H-Output-Node50', 
+regionDef_node47 = model.rootAssembly.sets['Node47']
+model.HistoryOutputRequest(name='H-Output-Node557', 
                           createStepName='Cycle-1-Mount-1',
                           variables=('U2',),  # Déplacement vertical
-                          region=regionDef_node50,
+                          region=regionDef_node47,
                           sectionPoints=DEFAULT,
                           rebar=EXCLUDE)
 
-regionDef_node51 = model.rootAssembly.sets['Node51']
-model.HistoryOutputRequest(name='H-Output-Node51', 
+regionDef_node46 = model.rootAssembly.sets['Node46']
+model.HistoryOutputRequest(name='H-Output-Node46', 
                           createStepName='Cycle-1-Mount-1',
                           variables=('U2',),  # Déplacement vertical
-                          region=regionDef_node51,
+                          region=regionDef_node46,
                           sectionPoints=DEFAULT,
                           rebar=EXCLUDE)
 
-regionDef_node52 = model.rootAssembly.sets['Node52']
-model.HistoryOutputRequest(name='H-Output-Node52', 
+regionDef_node45 = model.rootAssembly.sets['Node45']
+model.HistoryOutputRequest(name='H-Output-Node45', 
                           createStepName='Cycle-1-Mount-1',
                           variables=('U2',),  # Déplacement vertical
-                          region=regionDef_node52,
+                          region=regionDef_node45,
+                          sectionPoints=DEFAULT,
+                          rebar=EXCLUDE)
+
+regionDef_node44 = model.rootAssembly.sets['Node44']
+model.HistoryOutputRequest(name='H-Output-Node44', 
+                          createStepName='Cycle-1-Mount-1',
+                          variables=('U2',),  # Déplacement vertical
+                          region=regionDef_node44,
+                          sectionPoints=DEFAULT,
+                          rebar=EXCLUDE)
+
+
+# History output pour déplacements des nœuds du haut
+model.HistoryOutputRequest(name='H-Output-TopDisplacement', 
+                          createStepName='Cycle-1-Mount-1',
+                          variables=('U2',),
+                          region=assembly.sets['Top'],
                           sectionPoints=DEFAULT,
                           rebar=EXCLUDE)
 
 # Field outputs optimaux pour crack-closure
 model.FieldOutputRequest(name='F-Output-Complete', 
                         createStepName='Cycle-1-Mount-1',
-                        variables=('CSTATUS', 'PEEQ')) 
+                        variables=('CSTATUS', 'PEEQ', 'U', 'S'))
 
 
+
+# Field outputs pour TOUS les steps du dernier cycle
+last_cycle_steps = [
+    'LastCycle-Mount-1', 'LastCycle-Mount-5', 'LastCycle-Mount-10',
+    'LastCycle-Plateau-1',
+    'LastCycle-Descent-1', 'LastCycle-Descent-10', 'LastCycle-Descent-20', 'LastCycle-Descent-30'
+]
+
+for step_name in last_cycle_steps:
+    try:
+        model.fieldOutputRequests['F-Output-Complete'].setValuesInStep(
+            stepName=step_name, variables=('CSTATUS', 'PEEQ', 'U', 'S'))
+    except:
+        print("⚠️  Step non trouvé: " + step_name)
 
 print("History outputs created")
 print("Maximal stress:" + str(max_stress) + "MPa")
